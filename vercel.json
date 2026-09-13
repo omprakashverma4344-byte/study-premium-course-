@@ -1,9 +1,4 @@
 {
   "version": 2,
-  "cleanUrls": true,
-  "functions": {
-    "api/[...path].js": {
-      "runtime": "nodejs22.x"
-    }
-  }
+  "cleanUrls": true
 }
