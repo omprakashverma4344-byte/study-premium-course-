@@ -1,0 +1,2 @@
+Cloudflare Pages can serve the `public` directory as a static frontend.
+If the API is on Render, set API_BASE in public/assets/app.js to the Render API origin before deploying the frontend.
