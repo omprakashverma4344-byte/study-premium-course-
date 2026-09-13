@@ -23,7 +23,7 @@ const app = express();
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN?.split(',') || true, credentials: true }));
 app.use(express.json({ limit: '2mb' })); app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
-const upload = multer({ dest: path.join(__dirname, '../uploads'), limits: { fileSize: 1024 * 1024 * 1024 } });
+const upload=multer({dest:'/tmp/uploads',limits:{fileSize:1024*1024*1024}});
 
 app.get('/api/health', (req, res) => res.json({ ok: true, database: mongoose.connection.readyState === 1 ? 'connected' : 'not_connected' }));
 app.get('/api/config', (req, res) => res.json({ upiId: process.env.UPI_ID || '', upiName: process.env.UPI_NAME || 'STUDY PREMIUM COURSE', telegramConfigured: !!process.env.TELEGRAM_BOT_USERNAME }));
