@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import app from "../server/index.js";
 
-let connectionPromise;
+let mongoPromise = null;
 
 async function connectDB() {
   if (mongoose.connection.readyState === 1) {
@@ -12,25 +12,26 @@ async function connectDB() {
     throw new Error("MONGODB_URI is missing");
   }
 
-  if (!connectionPromise) {
-    connectionPromise = mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
+  if (!mongoPromise) {
+    mongoPromise = mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000
     });
   }
 
-  await connectionPromise;
+  await mongoPromise;
 }
 
 export default async function handler(req, res) {
   try {
     await connectDB();
+
     return app(req, res);
   } catch (error) {
-    console.error("API ERROR:", error);
+    console.error("Vercel API error:", error);
 
     return res.status(500).json({
       error: "Database connection failed",
-      detail: error.message,
+      detail: error.message
     });
   }
 }
