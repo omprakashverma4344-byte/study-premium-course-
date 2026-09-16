@@ -4,7 +4,9 @@ import app from '../server/index.js';
 let mongoPromise = null;
 
 async function connectDB() {
-  if (mongoose.connection.readyState === 1) return;
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
 
   if (!process.env.MONGODB_URI) {
     throw new Error('MONGODB_URI is missing');
@@ -24,27 +26,56 @@ export default async function handler(req, res) {
     await connectDB();
 
     /*
-     * Vercel catch-all routes can expose the path through
-     * req.url and req.path differently.
+     * Vercel catch-all route:
+     * /api/admin/login
+     * /api/admin/me
+     * /api/admin/stats
+     * /api/courses
      *
-     * Preserve the complete requested path.
+     * The complete path is available through req.query.path.
      */
-    const url = new URL(
-      req.url || '/',
-      `https://${req.headers.host || 'localhost'}`
-    );
 
-    let pathname = url.pathname;
+    const routePath = req.query?.path;
 
-    /*
-     * The Express app expects /api/... routes.
-     * Add /api only when Vercel has removed it.
-     */
-    if (!pathname.startsWith('/api/')) {
-      pathname = `/api${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
+    let pathname = '/api';
+
+    if (Array.isArray(routePath) && routePath.length > 0) {
+      pathname = `/api/${routePath.join('/')}`;
+    } else if (typeof routePath === 'string' && routePath.trim()) {
+      pathname = `/api/${routePath}`;
     }
 
-    req.url = `${pathname}${url.search}`;
+    /*
+     * Preserve query parameters such as:
+     * ?page=1
+     * ?search=test
+     */
+    const originalUrl = req.url || '/';
+
+    let search = '';
+
+    try {
+      const parsedUrl = new URL(
+        originalUrl,
+        `https://${req.headers.host || 'localhost'}`
+      );
+
+      search = parsedUrl.search;
+    } catch {
+      search = '';
+    }
+
+    /*
+     * Express expects the complete /api/... URL.
+     */
+    req.url = `${pathname}${search}`;
+
+    console.log('VERCEL API ROUTE:', {
+      method: req.method,
+      originalUrl,
+      routePath,
+      finalUrl: req.url,
+    });
 
     return app(req, res);
   } catch (error) {
