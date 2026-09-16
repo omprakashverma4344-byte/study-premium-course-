@@ -23,13 +23,28 @@ export default async function handler(req, res) {
   try {
     await connectDB();
 
-    // Vercel catch-all route can provide different URL shapes.
-    // Always normalize the request before passing it to Express.
-    const originalUrl = req.url || '/';
+    /*
+     * Vercel catch-all routes can expose the path through
+     * req.url and req.path differently.
+     *
+     * Preserve the complete requested path.
+     */
+    const url = new URL(
+      req.url || '/',
+      `https://${req.headers.host || 'localhost'}`
+    );
 
-    if (!originalUrl.startsWith('/api/')) {
-      req.url = `/api${originalUrl.startsWith('/') ? originalUrl : `/${originalUrl}`}`;
+    let pathname = url.pathname;
+
+    /*
+     * The Express app expects /api/... routes.
+     * Add /api only when Vercel has removed it.
+     */
+    if (!pathname.startsWith('/api/')) {
+      pathname = `/api${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
     }
+
+    req.url = `${pathname}${url.search}`;
 
     return app(req, res);
   } catch (error) {
