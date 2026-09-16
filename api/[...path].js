@@ -1,20 +1,18 @@
-import mongoose from "mongoose";
-import app from "../server/index.js";
+import mongoose from 'mongoose';
+import app from '../server/index.js';
 
 let mongoPromise = null;
 
 async function connectDB() {
-  if (mongoose.connection.readyState === 1) {
-    return;
-  }
+  if (mongoose.connection.readyState === 1) return;
 
   if (!process.env.MONGODB_URI) {
-    throw new Error("MONGODB_URI is missing");
+    throw new Error('MONGODB_URI is missing');
   }
 
   if (!mongoPromise) {
     mongoPromise = mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000
+      serverSelectionTimeoutMS: 10000,
     });
   }
 
@@ -25,18 +23,21 @@ export default async function handler(req, res) {
   try {
     await connectDB();
 
-    // Vercel catch-all function ko original API path ensure karna
-    if (req.url && !req.url.startsWith("/api/")) {
-      req.url = "/api" + req.url;
+    // Vercel catch-all route can provide different URL shapes.
+    // Always normalize the request before passing it to Express.
+    const originalUrl = req.url || '/';
+
+    if (!originalUrl.startsWith('/api/')) {
+      req.url = `/api${originalUrl.startsWith('/') ? originalUrl : `/${originalUrl}`}`;
     }
 
     return app(req, res);
   } catch (error) {
-    console.error("API ERROR:", error);
+    console.error('VERCEL API ERROR:', error);
 
     return res.status(500).json({
-      error: "Database connection failed",
-      detail: error.message
+      error: 'API request failed',
+      detail: error.message,
     });
   }
 }
